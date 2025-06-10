@@ -1,5 +1,3 @@
-# from NanoVNASaver.Serial import Interface
-# from NanoVNASaver.Hardware import get_VNA
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -7,184 +5,174 @@ import csv
 import math
 from NanoVNASaver.Serial import Interface
 from NanoVNASaver.Hardware import get_VNA
-# from NaSerial import Interface
-# from Hardware import get_VNA
 
-
-def save_and_print_s21():
-    DataS21 = []
+def read_nanovna_2_3ghz():
+    """
+    Membaca data S11 dari NanoVNA dalam range 2-3 GHz
+    Output format: frequency; S11_real; S11_imag
+    """
+    
+    # Inisialisasi koneksi NanoVNA
     radar = Interface("serial", "S-A-A-2")
-    radar.port = "COM3" 
+    radar.port = "COM3"  # Sesuaikan dengan port Anda
     radar.open()
 
+    # Get VNA instance
     vna = get_VNA(radar)
+    
+    # Set frekuensi range: 2 GHz - 3 GHz
+    start_freq = 2e9  # 2 GHz dalam Hz
+    stop_freq = 3e9   # 3 GHz dalam Hz
+    
+    print(f"Setting frequency range: {start_freq/1e9:.1f} GHz - {stop_freq/1e9:.1f} GHz")
+    
+    # Set sweep frequency range
+    vna.setSweep(int(start_freq), int(stop_freq))
+    
+    # Baca data frekuensi dan S11
     frequencies = vna.readFrequencies()
-    values11 = vna.readValues("data 0")
-    values21 = vna.readValues("data 1")
+    values11 = vna.readValues("data 0")  # S11 data
+    
+    print(f"Frequency points: {len(frequencies)}")
+    print(f"S11 data points: {len(values11)}")
+    
+    # Tampilkan range frekuensi yang terbaca
+    print(f"Actual frequency range: {frequencies[0]/1e9:.3f} GHz - {frequencies[-1]/1e9:.3f} GHz")
+    
+    # Process dan tampilkan data
+    print("\n=== DATA FORMAT: FREQUENCY; S11_REAL; S11_IMAG ===")
+    
+    # List untuk menyimpan data
+    csv_data = []
+    
+    for i, freq in enumerate(frequencies):
+        # Parse S11 data (format: "real imag")
+        s11_parts = values11[i].split()
+        s11_real = float(s11_parts[0])
+        s11_imag = float(s11_parts[1])
+        
+        # Format output seperti yang diminta: frequency; real; imag
+        output_line = f"{int(freq)};{s11_real:15.12e};{s11_imag:15.12e}"
+        print(output_line)
+        
+        # Simpan untuk CSV
+        csv_data.append([int(freq), s11_real, s11_imag])
+    
+    # Simpan ke file CSV
+    output_filename = "nanovna_2_3ghz_s11_data.csv"
+    with open(output_filename, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=';')
+        for row in csv_data:
+            writer.writerow([row[0], f"{row[1]:.12e}", f"{row[2]:.12e}"])
+    
+    print(f"\nData saved to: {output_filename}")
+    
+    # Analisis cepat: cari return loss minimum
+    print("\n=== QUICK ANALYSIS ===")
+    min_return_loss = float('inf')
+    best_freq = 0
+    best_s11 = (0, 0)
+    
+    for i, freq in enumerate(frequencies):
+        s11_parts = values11[i].split()
+        s11_real = float(s11_parts[0])
+        s11_imag = float(s11_parts[1])
+        
+        # Hitung return loss
+        s11_magnitude = math.sqrt(s11_real**2 + s11_imag**2)
+        return_loss = 20 * math.log10(s11_magnitude)
+        
+        if return_loss < min_return_loss:
+            min_return_loss = return_loss
+            best_freq = freq
+            best_s11 = (s11_real, s11_imag)
+    
+    print(f"Best return loss: {min_return_loss:.2f} dB at {best_freq/1e9:.3f} GHz")
+    print(f"S11 at best point: {best_s11[0]:.6e} {best_s11[1]:+.6e}j")
+    
+    # Tutup koneksi
+    radar.close()
+    
+    return csv_data
 
+def analyze_s11_data(csv_data):
+    """
+    Analisis tambahan untuk data S11
+    """
+    print("\n=== DETAILED ANALYSIS ===")
+    
+    return_losses = []
+    frequencies = []
+    
+    for freq, s11_real, s11_imag in csv_data:
+        s11_magnitude = math.sqrt(s11_real**2 + s11_imag**2)
+        return_loss = 20 * math.log10(s11_magnitude)
+        
+        return_losses.append(return_loss)
+        frequencies.append(freq/1e9)  # Convert to GHz
+    
+    # Plot hasil
+    plt.figure(figsize=(12, 6))
+    
+    plt.subplot(1, 2, 1)
+    plt.plot(frequencies, return_losses, 'b-', linewidth=2)
+    plt.xlabel('Frequency (GHz)')
+    plt.ylabel('Return Loss (dB)')
+    plt.title('S11 Return Loss vs Frequency')
+    plt.grid(True)
+    
+    # Cari dan tandai titik minimum
+    min_idx = return_losses.index(min(return_losses))
+    plt.plot(frequencies[min_idx], return_losses[min_idx], 'ro', markersize=8, 
+             label=f'Min: {return_losses[min_idx]:.2f} dB @ {frequencies[min_idx]:.3f} GHz')
+    plt.legend()
+    
+    # Plot VSWR
+    plt.subplot(1, 2, 2)
+    vswr_values = []
+    for rl in return_losses:
+        reflection_coef = 10**(rl/20)  # Convert dB back to linear
+        vswr = (1 + reflection_coef) / (1 - reflection_coef)
+        vswr_values.append(vswr)
+    
+    plt.plot(frequencies, vswr_values, 'r-', linewidth=2)
+    plt.xlabel('Frequency (GHz)')
+    plt.ylabel('VSWR')
+    plt.title('VSWR vs Frequency')
+    plt.grid(True)
+    plt.ylim(1, 5)  # Limit VSWR range for better visualization
+    
+    plt.tight_layout()
+    plt.show()
+    
+    return frequencies, return_losses
 
-    print("Freq =", frequencies)
-    print("Data S11=",values11)
-    print("Data S21=",values21)
+# Fungsi utama yang dimodifikasi
+def save_and_print_s11_modified():
+    """
+    Fungsi utama yang dimodifikasi untuk membaca 2-3 GHz
+    dan menghasilkan output dalam format yang diminta
+    """
+    try:
+        # Baca data dari NanoVNA
+        csv_data = read_nanovna_2_3ghz()
+        
+        # Analisis data (opsional)
+        analyze_s11_data(csv_data)
+        
+        print("\n✅ SUCCESS: Data berhasil dibaca dan disimpan!")
+        print("Format output: frequency; S11_real; S11_imag")
+        print("Contoh: 2450000000;-6.170969456e-03;-5.002862215e-02")
+        
+    except Exception as e:
+        print(f"❌ ERROR: {e}")
+        print("Pastikan:")
+        print("1. NanoVNA terhubung ke port yang benar")
+        print("2. Driver NanoVNA terinstall")
+        print("3. Port COM sesuai (ubah di line radar.port)")
 
-    DataS21.append(values21)
-    # print("Data Raw = ", DataS21)
-
-    # data_s21_float = [[float(num) for item in sublist for num in item.split()] for sublist in DataS21]
-
-    # Convert to a numpy array
-    # data_array = np.array(data_s21_float)
-
-    # print("Data Array = ", data_array)
-
-    # Reshape the array to have two columns: one for real parts and one for imaginary parts
-    # data_array = data_array.reshape(-1, 2)
-    # print(data_array)
-
-    # Extract real and imaginary parts
-    # data_real = data_array[:, 0]  # First column for real parts
-    # data_imaginary = data_array[:, 1]  # Second column for imaginary parts
-
-
-
-
-    # Combine into complex numbers
-    # s21_save = complex(data_real,data_imaginary)
-    # s21 = data_real + 1j * data_imaginary
-    # mag = 20*math.log10(abs(s21))
-
-    # # Print all the complex numbers
-    # # print(s21)
-    # # print(len(s21))
-
-    # Nfft = 512
-
-    # N = len(s21)
-    # k = 1
-
-    # Sfft = np.zeros(Nfft, dtype=complex)
-
-    # Sfft[0:k] = 0
-    # Sfft[k:N+k] = s21[0:N]
-    # Sfft[N+k:Nfft-N-k] = 0  # Zero padding
-    # Sfft[Nfft-N-k:Nfft-k] = np.conjugate(s21[::-1])
-    # Sfft[Nfft-k:Nfft] = 0
-
-    # St = np.real(np.fft.ifft(Sfft))
-
-    # fmin = 10000
-    # fmax = 6000e6
-    # deltaf=(fmax-fmin)/Nfft
-    # fm=N*deltaf/2
-    # fs=1.5*fm*1e6
-    # t = np.arange(0, (1/fs) * Nfft, 1/fs)
-    # t = t - 5 * 1e-9 * np.ones(len(t))
-    # tt = t * t
-    # a=0.4*1e-9
-    # x = (-1 / (a * np.sqrt(2 * np.pi))) * (1 / a**2) * t * np.exp(-tt / (2 * a**2))
-
-    # x = x / np.max(x) # Normalize x by dividing by its maximum value
-
-    # y = x[:Nfft]
-
-    # sfftx = np.fft.fft(y)
-
-    # Sfrec = sfftx * Sfft
-
-    # Strec = -np.real(np.fft.ifft(Sfrec))
-
-    # # nd = np.abs(Strec / np.max(np.abs(Strec)) - x / np.max(np.abs(x)))
-    # nd = Strec / np.max(Strec) - x / np.max(x)
-    # # nd = nd+1
-    # # nd = nd / np.max(nd)
-
-    # print(nd)
-
-    # x_data = np.arange(len(nd))
-
-    # # Plot the data
-    # plt.figure(figsize=(10, 6))
-    # plt.plot(x_data, np.abs(nd), label='test data')
-
-    # plt.xlabel('FFT Sample Index')
-    # plt.ylabel('Amplitude Value of |S21|')
-    # plt.title('Plot S21 Parameter')
-    # plt.legend()
-    # plt.grid(True)
-
-    # plt.show()
-
-    # plt.figure(figsize=(10, 6))
-    # # plt.plot(x_data, nd, label='test data')
-    # plt.plot(mag, label='test data')
-
-    # plt.xlabel('FFT Sample Index')
-    # plt.ylabel('Amplitude Value of |S21|')
-    # plt.title('Magnitude')
-    # plt.legend()
-    # plt.grid(True)
-
-    # # Set the limits for y-axis
-    # # plt.ylim([0, max(nd)])
-
-    # plt.show()
-
-    # # Prepare data for CSV
-    #   data_for_csv = np.column_stack((data_real, data_imaginary))
-
-    #   # Create a DataFrame
-    #   df = pd.DataFrame(data_for_csv)
-
-    #   # Save DataFrame to CSV without header
-    #   df.to_csv("s21_data_pakealuminium.csv", index=False, header=False)
-
-    #   print("Data saved to s21_data.csv without header")
-
-
-    # float_pairs = []
-    # import csv
-    # # Process each string in the list
-    # for data in values21:
-    #     # Split by space and convert to float
-    #     pair = [float(x) for x in data.split()]
-    #     # Add the pair to the list
-    #     float_pairs.append(pair)
-
-    # # Print the resulting list of float pairs
-    # for i, pair in enumerate(float_pairs):
-    #     print(f"{pair[0]}, {pair[1]}")
-
-    # with open('./12Juni2024/data1Aluminium4.csv', 'w', newline='') as csvfile:
-    #     csvwriter = csv.writer(csvfile)
-    #     # csvwriter.writerow(['Value1', 'Value2'])  # Write header
-    #     csvwriter.writerows(float_pairs)  # Write data
-
-    # print("Data has been saved to float_pairs.csv")
-
-    # with open('./12Juni2024/data1Aluminium4.csv', 'w', newline='') as csvfile:
-    #     writer = csv.writer(csvfile)
-    #     for row in s21_save:
-    #         writer.writerow(row)
-
-    # print("Data saved to s21_data.csv without header")
-
-
-# This block ensures the function runs only when the script is executed directly
+# Script execution
 if __name__ == "__main__":
-  save_and_print_s21()
-  # Get the filename from user input
-  
-
-
-# data_s21_float = [list(map(float, item.split())) for item in DataS21]
-# data_array = np.array(data_s21_float)
-
-# # Extract real and imaginary parts
-# data_real = data_array[:, 0]  # First column for real parts
-# data_imaginary = data_array[:, 1]  # Second column for imaginary parts
-
-# # Combine into complex numbers
-# s21 = data_real + 1j * data_imaginary
-
-# print(s21)
-# print(len(s21))
+    print("🔧 NanoVNA 2-3 GHz S11 Data Reader")
+    print("=" * 50)
+    save_and_print_s11_modified()
