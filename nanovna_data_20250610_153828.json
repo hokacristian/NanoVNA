@@ -1,0 +1,233 @@
+[
+  {
+    "frequency": 2400000000,
+    "s11_real": -0.21633389592170715,
+    "s11_imag": -0.3006501793861389,
+    "s11_magnitude": 0.3703928791021522,
+    "return_loss_db": -8.626747426647045,
+    "vswr": 2.1765841484573922,
+    "phase_degrees": -125.73703620419518,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.400 GHz"
+  },
+  {
+    "frequency": 2402500000,
+    "s11_real": -0.21983754634857178,
+    "s11_imag": -0.2788907587528229,
+    "s11_magnitude": 0.3551177299182423,
+    "return_loss_db": -8.992552883822073,
+    "vswr": 2.1013412723324545,
+    "phase_degrees": -128.24718713363993,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.402 GHz"
+  },
+  {
+    "frequency": 2405000000,
+    "s11_real": -0.2251049131155014,
+    "s11_imag": -0.25395119190216064,
+    "s11_magnitude": 0.3393573776673574,
+    "return_loss_db": -9.386854095185145,
+    "vswr": 2.0273553845773105,
+    "phase_degrees": -131.55410546974898,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.405 GHz"
+  },
+  {
+    "frequency": 2407500000,
+    "s11_real": -0.2281782031059265,
+    "s11_imag": -0.22769874334335327,
+    "s11_magnitude": 0.3223538585045814,
+    "return_loss_db": -9.833342540252234,
+    "vswr": 1.9513928841776214,
+    "phase_degrees": -135.06025970588524,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.408 GHz"
+  },
+  {
+    "frequency": 2410000000,
+    "s11_real": -0.22783330082893372,
+    "s11_imag": -0.2017035335302353,
+    "s11_magnitude": 0.30428987562058346,
+    "return_loss_db": -10.33424994628133,
+    "vswr": 1.8747605215376573,
+    "phase_degrees": -138.48115134681512,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.410 GHz"
+  },
+  {
+    "frequency": 2412500000,
+    "s11_real": -0.2292982041835785,
+    "s11_imag": -0.1773703247308731,
+    "s11_magnitude": 0.28989290873863993,
+    "return_loss_db": -10.755248161568236,
+    "vswr": 1.81647659150595,
+    "phase_degrees": -142.27677223745164,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.413 GHz"
+  },
+  {
+    "frequency": 2415000000,
+    "s11_real": -0.225250244140625,
+    "s11_imag": -0.1527474820613861,
+    "s11_magnitude": 0.2721570608334545,
+    "return_loss_db": -11.303607877591961,
+    "vswr": 1.7478455754344533,
+    "phase_degrees": -145.8578822785886,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.415 GHz"
+  },
+  {
+    "frequency": 2417500000,
+    "s11_real": -0.2157929390668869,
+    "s11_imag": -0.12800543010234833,
+    "s11_magnitude": 0.25090233694968317,
+    "return_loss_db": -12.009905871386126,
+    "vswr": 1.66987884043854,
+    "phase_degrees": -149.32415966937918,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.417 GHz"
+  },
+  {
+    "frequency": 2420000000,
+    "s11_real": -0.20753835141658783,
+    "s11_imag": -0.10399848222732544,
+    "s11_magnitude": 0.232137570449728,
+    "return_loss_db": -12.685091303889838,
+    "vswr": 1.6046332299021016,
+    "phase_degrees": -153.38432689871965,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.420 GHz"
+  },
+  {
+    "frequency": 2422500000,
+    "s11_real": -0.19481395184993744,
+    "s11_imag": -0.08485555648803711,
+    "s11_magnitude": 0.21249221468628962,
+    "return_loss_db": -13.453139541047271,
+    "vswr": 1.5396574323430758,
+    "phase_degrees": -156.46339379000284,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.422 GHz"
+  },
+  {
+    "frequency": 2425000000,
+    "s11_real": -0.17726269364356995,
+    "s11_imag": -0.06984857469797134,
+    "s11_magnitude": 0.19052791382134066,
+    "return_loss_db": -14.400827756146231,
+    "vswr": 1.4707461000187945,
+    "phase_degrees": -158.49358070799153,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.425 GHz"
+  },
+  {
+    "frequency": 2427500000,
+    "s11_real": -0.16044941544532776,
+    "s11_imag": -0.05295524746179581,
+    "s11_magnitude": 0.16896234240352911,
+    "return_loss_db": -15.444201565563485,
+    "vswr": 1.4066298099948984,
+    "phase_degrees": -161.73487510261705,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.428 GHz"
+  },
+  {
+    "frequency": 2430000000,
+    "s11_real": -0.13865011930465698,
+    "s11_imag": -0.04001230746507645,
+    "s11_magnitude": 0.14430814367829498,
+    "return_loss_db": -16.81418319729159,
+    "vswr": 1.3372899779568335,
+    "phase_degrees": -163.90266763429977,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.430 GHz"
+  },
+  {
+    "frequency": 2432500000,
+    "s11_real": -0.12099453806877136,
+    "s11_imag": -0.029183462262153625,
+    "s11_magnitude": 0.12446426279089877,
+    "return_loss_db": -18.099106577900052,
+    "vswr": 1.2843156652580439,
+    "phase_degrees": -166.43946220136104,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.433 GHz"
+  },
+  {
+    "frequency": 2435000000,
+    "s11_real": -0.09785205870866776,
+    "s11_imag": -0.02112412452697754,
+    "s11_magnitude": 0.1001062137459799,
+    "return_loss_db": -19.99077928720957,
+    "vswr": 1.2224845093390213,
+    "phase_degrees": -167.81803550272315,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.435 GHz"
+  },
+  {
+    "frequency": 2437500000,
+    "s11_real": -0.07522671669721603,
+    "s11_imag": -0.018455013632774353,
+    "s11_magnitude": 0.07745738462683263,
+    "return_loss_db": -22.218743423866915,
+    "vswr": 1.1679215319402914,
+    "phase_degrees": -166.21612003901024,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.438 GHz"
+  },
+  {
+    "frequency": 2440000000,
+    "s11_real": -0.052079085260629654,
+    "s11_imag": -0.016900092363357544,
+    "s11_magnitude": 0.05475257293930531,
+    "return_loss_db": -25.23190935182543,
+    "vswr": 1.115848129012235,
+    "phase_degrees": -162.02132603506496,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.440 GHz"
+  },
+  {
+    "frequency": 2442500000,
+    "s11_real": -0.02706817537546158,
+    "s11_imag": -0.020979851484298706,
+    "s11_magnitude": 0.03424675585307279,
+    "return_loss_db": -29.307611246548856,
+    "vswr": 1.0709223728952084,
+    "phase_degrees": -142.2216503337756,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.442 GHz"
+  },
+  {
+    "frequency": 2445000000,
+    "s11_real": -0.006521295756101608,
+    "s11_imag": -0.026403680443763733,
+    "s11_magnitude": 0.02719708880220345,
+    "return_loss_db": -31.30955161402419,
+    "vswr": 1.055914900108011,
+    "phase_degrees": -103.87350798609344,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.445 GHz"
+  },
+  {
+    "frequency": 2447500000,
+    "s11_real": 0.014582298696041107,
+    "s11_imag": -0.037107229232788086,
+    "s11_magnitude": 0.039869661355412145,
+    "return_loss_db": -27.987149062573742,
+    "vswr": 1.0830505187695578,
+    "phase_degrees": -68.54629996634385,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.447 GHz"
+  },
+  {
+    "frequency": 2450000000,
+    "s11_real": 0.037562936544418335,
+    "s11_imag": -0.05052062124013901,
+    "s11_magnitude": 0.06295480420372684,
+    "return_loss_db": -24.019422448673964,
+    "vswr": 1.1343687678804644,
+    "phase_degrees": -53.3685731858553,
+    "session_id": "20250610_153828",
+    "notes": "NanoVNA measurement at 2.450 GHz"
+  }
+]

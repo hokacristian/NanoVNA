@@ -4,6 +4,9 @@ import pandas as pd
 import csv
 import math
 import json
+import time
+import signal
+import sys
 from datetime import datetime
 from NanoVNASaver.Serial import Interface
 from NanoVNASaver.Hardware import get_VNA
@@ -12,6 +15,9 @@ from NanoVNASaver.Hardware import get_VNA
 from supabase import create_client, Client
 import os
 from typing import List, Dict, Any
+
+# GPIO untuk button trigger
+import RPi.GPIO as GPIO
 
 class NanoVNASupabaseLogger:
     def __init__(self, supabase_url: str, supabase_key: str):
@@ -55,6 +61,50 @@ class NanoVNASupabaseLogger:
             print(f"❌ Error inserting data to Supabase: {e}")
             return False
 
+class ButtonTrigger:
+    def __init__(self, pin=17, callback=None):
+        """
+        Initialize button trigger on specified GPIO pin
+        """
+        self.pin = pin
+        self.callback = callback
+        self.setup_gpio()
+        
+    def setup_gpio(self):
+        """
+        Setup GPIO untuk button
+        """
+        try:
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            
+            # Setup interrupt untuk button press
+            GPIO.add_event_detect(
+                self.pin, 
+                GPIO.FALLING,  # Trigger saat button ditekan (LOW)
+                callback=self.button_pressed,
+                bouncetime=2000  # Debounce 2 detik untuk menghindari multiple trigger
+            )
+            print(f"✅ Button trigger setup on GPIO pin {self.pin}")
+            
+        except Exception as e:
+            print(f"❌ Error setting up GPIO: {e}")
+            
+    def button_pressed(self, channel):
+        """
+        Callback saat button ditekan
+        """
+        print(f"\n🔴 BUTTON PRESSED! Triggering NanoVNA measurement...")
+        if self.callback:
+            self.callback()
+            
+    def cleanup(self):
+        """
+        Cleanup GPIO
+        """
+        GPIO.cleanup()
+        print("🧹 GPIO cleaned up")
+
 def read_nanovna_real_data():
     """
     Membaca data ASLI dari hardware NanoVNA
@@ -62,7 +112,7 @@ def read_nanovna_real_data():
     print("🔌 CONNECTING TO NANOVNA HARDWARE...")
     
     # ============ KONFIGURASI NANOVNA ============
-    COM_PORT = "COM3"  # 🔧 GANTI sesuai port NanoVNA Anda
+    COM_PORT = "/dev/ttyACM0"  # 🔧 Port untuk Raspberry Pi
     
     # ============ KONFIGURASI FREKUENSI ============
     # Range frekuensi yang akan dibaca dan disimpan
@@ -122,7 +172,7 @@ def read_nanovna_real_data():
         print("💡 Troubleshooting:")
         print(f"   - Cek apakah NanoVNA terhubung ke port {COM_PORT}")
         print("   - Cek apakah driver NanoVNA sudah terinstall")
-        print("   - Coba ganti port (COM1, COM2, COM4, dll)")
+        print("   - Coba ganti port (/dev/ttyUSB0, /dev/ttyUSB1, dll)")
         print("   - Pastikan NanoVNA tidak digunakan aplikasi lain")
         return None
 
@@ -238,8 +288,8 @@ def send_to_supabase(data: List[Dict], session_id: str):
     
     # ============ KONFIGURASI SUPABASE ============
     # 🔧 GANTI dengan credentials Anda
-    SUPABASE_URL = "https://bxqetstclndccppyalom.supabase.co"  # URL yang Anda gunakan tadi
-    SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4cWV0c3RjbG5kY2NwcHlhbG9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTQ4MjM1MCwiZXhwIjoyMDY1MDU4MzUwfQ.3ZbX9aiIpHqpSKmOyyvAEhd9FuJ_jmPB_xdIOBrI3SQ"  # Key yang Anda gunakan tadi
+    SUPABASE_URL = "https://bxqetstclndccppyalom.supabase.co"
+    SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4cWV0c3RjbG5kY2NwcHlhbG9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTQ4MjM1MCwiZXhwIjoyMDY1MDU4MzUwfQ.3ZbX9aiIpHqpSKmOyyvAEhd9FuJ_jmPB_xdIOBrI3SQ"
     
     # Atau baca dari environment variables (lebih aman)
     SUPABASE_URL = os.getenv("SUPABASE_URL", SUPABASE_URL)
@@ -266,7 +316,7 @@ def send_to_supabase(data: List[Dict], session_id: str):
 
 def plot_results(data):
     """
-    Plot hasil pengukuran
+    Plot hasil pengukuran (optional - bisa dihidupkan jika ada display)
     """
     if not data or len(data) < 2:
         print("⚠️ Insufficient data for plotting")
@@ -314,65 +364,131 @@ def plot_results(data):
     ax4.grid(True)
     
     plt.tight_layout()
-    plt.show()
+    
+    # Save plot instead of showing (headless mode)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"nanovna_plot_{timestamp}.png"
+    plt.savefig(filename, dpi=300, bbox_inches='tight')
+    print(f"📊 Plot saved to: {filename}")
+    plt.close()  # Close figure to free memory
 
-def main_real_nanovna():
+def run_nanovna_measurement():
     """
-    Fungsi utama untuk membaca data ASLI dari NanoVNA
+    Fungsi utama untuk membaca data dari NanoVNA dan kirim ke database
+    Dipanggil saat button ditekan
     """
-    print("🚀 NANOVNA REAL DATA TO SUPABASE")
-    print("=" * 50)
+    print("\n" + "="*60)
+    print("🚀 STARTING NANOVNA MEASUREMENT SESSION")
+    print(f"⏰ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("="*60)
     
-    # 1. Baca data ASLI dari NanoVNA hardware
-    result = read_nanovna_real_data()
-    if result is None:
-        print("❌ Gagal membaca data dari NanoVNA hardware")
-        return
-    
-    frequencies, values11, values21, freq_min, freq_max = result
-    
-    # 2. Process dan filter data
-    all_data, filtered_data, session_id = process_nanovna_data(
-        frequencies, values11, values21, freq_min, freq_max
-    )
-    
-    if len(filtered_data) == 0:
-        print("⚠️ Tidak ada data dalam range frekuensi yang ditentukan")
-        return
-    
-    # 3. Analisis data
-    analyze_data(filtered_data)
-    
-    # 4. Konfirmasi user
-    print(f"\n🤔 Data ready to send to Supabase:")
-    print(f"   📊 {len(filtered_data)} data points (filtered)")
-    print(f"   📅 Session ID: {session_id}")
-    print(f"   📈 Frequency range: {freq_min/1e9:.1f} - {freq_max/1e9:.1f} GHz")
-    
-    choice = input("\n❓ Send to Supabase database? (y/n): ").lower().strip()
-    
-    if choice in ['y', 'yes', 'ya']:
-        # 5. Kirim ke Supabase
+    try:
+        # 1. Baca data ASLI dari NanoVNA hardware
+        result = read_nanovna_real_data()
+        if result is None:
+            print("❌ Gagal membaca data dari NanoVNA hardware")
+            return False
+        
+        frequencies, values11, values21, freq_min, freq_max = result
+        
+        # 2. Process dan filter data
+        all_data, filtered_data, session_id = process_nanovna_data(
+            frequencies, values11, values21, freq_min, freq_max
+        )
+        
+        if len(filtered_data) == 0:
+            print("⚠️ Tidak ada data dalam range frekuensi yang ditentukan")
+            return False
+        
+        # 3. Analisis data
+        analyze_data(filtered_data)
+        
+        # 4. Langsung kirim ke Supabase (tanpa konfirmasi)
+        print(f"\n🚀 AUTO-SENDING TO DATABASE:")
+        print(f"   📊 {len(filtered_data)} data points")
+        print(f"   📅 Session ID: {session_id}")
+        print(f"   📈 Frequency range: {freq_min/1e9:.1f} - {freq_max/1e9:.1f} GHz")
+        
         success = send_to_supabase(filtered_data, session_id)
         
         if success:
             print("✅ SUCCESS! Data berhasil disimpan ke database!")
             
-            # 6. Optional: Plot results
-            plot_choice = input("\n📊 Show plots? (y/n): ").lower().strip()
-            if plot_choice in ['y', 'yes', 'ya']:
+            # 5. Save backup file
+            backup_filename = f"nanovna_backup_{session_id}.json"
+            with open(backup_filename, 'w') as f:
+                json.dump(filtered_data, f, indent=2)
+            print(f"💾 Backup saved: {backup_filename}")
+            
+            # 6. Optional: Generate plot (headless mode)
+            try:
                 plot_results(filtered_data)
-                
+            except Exception as plot_error:
+                print(f"⚠️ Plot generation failed: {plot_error}")
+            
+            return True
         else:
             print("❌ Gagal menyimpan ke database!")
-    else:
-        print("⏭️ Data tidak dikirim ke Supabase")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Error in measurement session: {e}")
+        return False
+
+def signal_handler(sig, frame):
+    """
+    Handle Ctrl+C untuk graceful shutdown
+    """
+    print('\n🛑 Shutdown signal received...')
+    cleanup_and_exit()
+
+def cleanup_and_exit():
+    """
+    Cleanup resources dan exit
+    """
+    global button_trigger
+    try:
+        if 'button_trigger' in globals():
+            button_trigger.cleanup()
+        print("🧹 Cleanup completed")
+    except:
+        pass
+    print("👋 Goodbye!")
+    sys.exit(0)
+
+def main():
+    """
+    Main program - setup button trigger dan wait for button press
+    """
+    global button_trigger
+    
+    print("🚀 NANOVNA AUTO DATA LOGGER")
+    print("=" * 50)
+    print("📌 Button trigger on GPIO pin 17")
+    print("🔴 Press the button to start measurement")
+    print("⌨️  Press Ctrl+C to exit")
+    print("=" * 50)
+    
+    # Setup signal handler untuk Ctrl+C
+    signal.signal(signal.SIGINT, signal_handler)
+    
+    try:
+        # Setup button trigger
+        button_trigger = ButtonTrigger(pin=17, callback=run_nanovna_measurement)
         
-        # Save to local file as backup
-        filename = f"nanovna_data_{session_id}.json"
-        with open(filename, 'w') as f:
-            json.dump(filtered_data, f, indent=2)
-        print(f"💾 Data disimpan ke file: {filename}")
+        print("✅ System ready! Waiting for button press...")
+        print("💡 Status: Idle - Press button to trigger measurement")
+        
+        # Main loop - wait for button press
+        while True:
+            time.sleep(1)  # Sleep untuk mengurangi CPU usage
+            
+    except KeyboardInterrupt:
+        print("\n🛑 Ctrl+C detected")
+        cleanup_and_exit()
+    except Exception as e:
+        print(f"❌ Fatal error: {e}")
+        cleanup_and_exit()
 
 if __name__ == "__main__":
-    main_real_nanovna()
+    main()
